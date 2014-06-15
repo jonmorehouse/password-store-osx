@@ -15,17 +15,18 @@ clip() {
 	echo "Copied $2 to clipboard. Will clear in 45 seconds."
 }
 
+cleanup_tmp() {
+	[[ -d $SECURE_TMPDIR ]] || return
+	umount "$SECURE_TMPDIR"
+	diskutil quiet eject "$ramdisk_dev"
+	rm -rf "$tmp_file" "$SECURE_TMPDIR" 2>/dev/null
+	rmdir "$SECURE_TMPDIR"
+}
+
 tmpdir() {
-	cleanup_tmp() {
-		[[ -d $SECURE_TMPDIR ]] || return
-		rm -rf "$tmp_file" "$SECURE_TMPDIR" 2>/dev/null
-		umount "$SECURE_TMPDIR"
-		diskutil quiet eject "$ramdisk_dev"
-		rmdir "$SECURE_TMPDIR"
-	}
 	trap cleanup_tmp INT TERM EXIT
 	SECURE_TMPDIR="$(mktemp -t "$template" -d)"
-	local ramdisk_dev="$(hdid -drivekey system-image=yes -nomount 'ram://32768' | cut -d ' ' -f 1)" # 32768 sectors = 16 mb
+	ramdisk_dev="$(hdid -drivekey system-image=yes -nomount 'ram://32768' | cut -d ' ' -f 1)" # 32768 sectors = 16 mb
 	[[ -z $ramdisk_dev ]] && exit 1
 	newfs_hfs -M 700 "$ramdisk_dev" &>/dev/null || exit 1
 	mount -t hfs -o noatime -o nobrowse "$ramdisk_dev" "$SECURE_TMPDIR" || exit 1
