@@ -415,6 +415,9 @@ cmd_edit() {
 	local tmp_file="$(TMPDIR="$SECURE_TMPDIR" mktemp -t "$template")"
 	eval "shred_tmpfile() {
 		$SHRED '$tmp_file'
+		if [[ $(uname) == Darwin ]];then
+			cleanup_tmp	
+		fi
 		rm -rf '$SECURE_TMPDIR' '$tmp_file'
 	}"
 	trap shred_tmpfile INT TERM EXIT
